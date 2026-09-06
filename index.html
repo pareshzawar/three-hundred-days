@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CEL — Three Hundred Days</title>
+<style>
+:root{
+  --ink:#12181F; --ink-2:#19212B; --ink-3:#222D39; --rule:#2C3947;
+  --text:#DCE4EB; --text-dim:#8B9AA8; --text-faint:#5E6E7C;
+  --done:#2F8F79; --today:#E0A33C; --miss:#A8443C; --exam:#C7743C;
+  --p1:#2F8F79; --p2:#4A7FA5; --p3:#7B6BA8; --p4:#5E6E7C;
+  --pad: clamp(1rem, 4vw, 2.5rem);
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--sans);
+  font-size:clamp(14px,2vw,16px);line-height:1.7}
+.wrap{max-width:1000px;margin:0 auto;padding:var(--pad)}
+a{color:var(--done);text-decoration:none;border-bottom:1px solid transparent}
+a:hover,a:focus-visible{border-bottom-color:currentColor}
+:focus-visible{outline:2px solid var(--today);outline-offset:3px}
+h1,h2,h3{line-height:1.25;font-weight:600;margin:0}
+
+.mast{padding-bottom:1.5rem;border-bottom:1px solid var(--rule)}
+.mast h1{font-size:clamp(1.4rem,4vw,2rem);letter-spacing:-.015em}
+.mast p{margin:.35rem 0 0;color:var(--text-dim);font-size:.9rem;max-width:60ch}
+.counter{display:flex;align-items:baseline;gap:.6rem;margin:1.4rem 0 .2rem;flex-wrap:wrap}
+.counter .n{font-family:var(--mono);font-size:clamp(3rem,14vw,6rem);line-height:.85;
+  font-weight:600;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.counter .of{font-family:var(--mono);font-size:clamp(1rem,4vw,1.5rem);color:var(--text-faint)}
+.counter .lab{color:var(--text-dim);font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));
+  gap:.25rem 1.5rem;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--rule)}
+.stat b{display:block;font-family:var(--mono);font-size:1.35rem;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{color:var(--text-dim);font-size:.8rem}
+
+/* three hundreds */
+.hundreds{display:flex;gap:clamp(1rem,4vw,2.5rem);flex-wrap:wrap;margin:2.5rem 0 1rem}
+.hundred h3{font-family:var(--mono);font-size:.82rem;font-weight:500;color:var(--text-dim);margin-bottom:.15rem}
+.hundred .dates{font-family:var(--mono);font-size:.72rem;color:var(--text-faint);margin-bottom:.5rem}
+.sq{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:min(100%,168px)}
+.cell{aspect-ratio:1;border:0;padding:0;border-radius:2px;background:var(--ink-2);
+  cursor:pointer;transition:transform .12s ease,background .12s ease}
+.cell:hover{transform:scale(1.4)}
+.cell.done{background:var(--done)}
+.cell.miss{background:var(--miss);opacity:.4}
+.cell.exam{background:var(--exam);opacity:.5}
+.cell.exam.done{background:var(--done);opacity:1}
+.cell.today{box-shadow:inset 0 0 0 2px var(--today)}
+.cell.pubcell{box-shadow:inset 0 0 0 2px var(--exam)}
+.cell.pubcell.today{box-shadow:inset 0 0 0 2px var(--today)}
+.par.pubday{color:var(--exam);font-weight:600}
+.legend{display:flex;gap:1.1rem;flex-wrap:wrap;margin-top:1rem;font-size:.78rem;color:var(--text-dim)}
+.legend i{width:11px;height:11px;border-radius:2px;display:inline-block;vertical-align:-1px;margin-right:.35rem}
+
+.today-card{border:1px solid var(--rule);border-left:3px solid var(--today);
+  padding:1.25rem var(--pad) 1.35rem;margin:2.25rem 0;background:var(--ink-2)}
+.today-card .eyebrow{color:var(--today);font-size:.82rem;font-family:var(--mono)}
+.today-card h2{font-size:1.15rem;margin:.35rem 0 .4rem}
+.today-card p{margin:0 0 .5rem;color:var(--text-dim);max-width:62ch}
+.today-card .par{font-size:.85rem;color:var(--text-faint);margin-bottom:1rem}
+.btn{font:inherit;font-weight:600;cursor:pointer;padding:.6rem 1.2rem;
+  background:var(--done);color:#08110E;border:0;border-radius:3px}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--rule)}
+.btn.ghost:hover{color:var(--text);border-color:var(--text-faint);filter:none}
+.btnrow{display:flex;gap:.6rem;flex-wrap:wrap}
+
+h2.sech{font-size:1.05rem;margin:3rem 0 .2rem;padding-bottom:.6rem;border-bottom:1px solid var(--rule)}
+.partintro{color:var(--text-dim);font-size:.85rem;margin:.7rem 0 .3rem;max-width:64ch}
+.partintro b{color:var(--text);font-weight:600}
+.mod{border-bottom:1px solid var(--rule)}
+.mod summary{cursor:pointer;list-style:none;padding:.95rem 0;
+  display:grid;grid-template-columns:auto 1fr auto;gap:.3rem .9rem;align-items:baseline}
+.mod summary::-webkit-details-marker{display:none}
+.mod .days{font-family:var(--mono);color:var(--text-faint);font-size:.8rem;white-space:nowrap}
+.mod .nm{font-weight:600}
+.mod .hrs{font-family:var(--mono);color:var(--text-dim);font-size:.8rem;white-space:nowrap}
+.mod .sub{grid-column:2/-1;color:var(--text-dim);font-size:.82rem;margin-top:-.3rem}
+.pri{display:inline-block;font-family:var(--mono);font-size:.68rem;padding:.05rem .4rem;
+  border-radius:2px;margin-left:.5rem;vertical-align:1px;color:#0C1114;font-weight:600}
+.pri.P1{background:var(--p1)} .pri.P2{background:var(--p2)}
+.pri.P3{background:var(--p3)} .pri.P4{background:var(--p4)}
+.tag{display:inline-block;font-size:.68rem;font-family:var(--mono);padding:.05rem .4rem;
+  border:1px solid var(--exam);color:var(--exam);border-radius:2px;margin-left:.4rem;vertical-align:1px}
+.edit{display:inline-flex;gap:.3rem;align-items:center;margin-left:.6rem}
+.edit .mv{font:inherit;font-size:.7rem;line-height:1;cursor:pointer;padding:.25rem .4rem;
+background:var(--ink-3);color:var(--text-dim);border:1px solid var(--rule);border-radius:2px}
+.edit .mv:hover{color:var(--text);border-color:var(--text-faint)}
+.edit select{font:inherit;font-size:.72rem;font-family:var(--mono);padding:.2rem .3rem;
+background:var(--ink-3);color:var(--text);border:1px solid var(--rule);border-radius:2px}
+body.editing .mod summary{background:var(--ink-2);padding-left:.6rem;margin-left:-.6rem}
+body.editing .cyc summary,body.editing .mod summary{cursor:default}
+.body{padding:0 0 1.6rem}
+.body h4{font-size:.82rem;color:var(--text-dim);margin:1.3rem 0 .45rem;font-weight:600}
+.body ul{margin:0;padding-left:1.15rem}
+.body li{margin-bottom:.3rem}
+.body li::marker{color:var(--text-faint)}
+.free{color:var(--done)} .paid{color:var(--exam)}
+.hold{background:var(--ink-3);border-left:2px solid var(--today);padding:.7rem .9rem;
+  font-size:.84rem;color:var(--text-dim);margin:1.2rem 0 0}
+table.omod{border-collapse:collapse;width:100%;font-size:.82rem;margin-bottom:.5rem}
+table.omod td{padding:.22rem 0;border-bottom:1px solid var(--rule);vertical-align:top}
+table.omod td:last-child{text-align:right;font-family:var(--mono);color:var(--text-faint);white-space:nowrap;padding-left:1rem}
+.onote{font-size:.82rem;color:var(--text-dim);margin-top:.6rem}
+.hold.buy{border-left-color:var(--exam);color:var(--text)}
+.ship{margin-top:1.3rem;padding:.8rem 1rem;background:var(--ink-2);
+  border-left:2px solid var(--done);font-size:.88rem}
+.ship b{color:var(--done);font-weight:600}
+.dod{columns:2;column-gap:2rem;margin:.5rem 0 0;padding-left:1.15rem}
+@media (max-width:600px){.dod{columns:1}}
+footer{margin-top:3rem;padding-top:1.25rem;border-top:1px solid var(--rule);
+  color:var(--text-faint);font-size:.8rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+@media (prefers-color-scheme:light){
+  :root{--ink:#E9EDF0;--ink-2:#DFE5EA;--ink-3:#D2DAE1;--rule:#B9C4CD;
+    --text:#151D26;--text-dim:#4C5A67;--text-faint:#78868F;
+    --done:#1F6A57;--today:#9A6510;--miss:#8E332B;--exam:#8A4A1E;
+    --p1:#1F6A57;--p2:#2F5B79;--p3:#564A80;--p4:#78868F}
+}
+@media print{
+  :root{--ink:#fff;--ink-2:#fff;--ink-3:#fff;--rule:#999;--text:#000;
+    --text-dim:#333;--text-faint:#666;--done:#1F6A57;--today:#8A5A00;--exam:#8A4A1E}
+  @page{size:A4;margin:14mm}
+  body{font-size:10.5pt;line-height:1.45}
+  .wrap{max-width:none;padding:0}
+  .btnrow,.legend{display:none}
+  .body{display:block!important}
+  .mod{break-inside:avoid;page-break-inside:avoid}
+  .mod summary{cursor:default}
+  .pri{border:1px solid #666;color:#000;background:none!important}
+  a{color:#000;border:0}
+  a::after{content:" (" attr(href) ")";font-size:8pt;color:#555;word-break:break-all}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <h1>Three hundred days, in three parts</h1>
+  <p>Two to three hours on weekdays, four to five at weekends. Seven hundred and
+     forty-six hours of material, one hundred days at a time, with real breaks between.</p>
+
+  <div class="counter">
+    <span class="n" id="dayNum">—</span>
+    <span class="of" id="dayDen">/100</span>
+    <span class="lab" id="dayLabel">loading</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="sHours">0</b><span>hours logged</span></div>
+    <div class="stat"><b id="sDays">0</b><span>days done</span></div>
+    <div class="stat"><b id="sStreak">0</b><span>current streak</span></div>
+    <div class="stat"><b id="sBest">0</b><span>best streak</span></div>
+    <div class="stat"><b id="sRate">—</b><span>consistency</span></div>
+  </div>
+</header>
+
+<section class="hundreds" id="hundreds"></section>
+<div class="legend">
+  <span><i style="background:var(--done)"></i>logged</span>
+  <span><i style="background:var(--miss);opacity:.4"></i>missed</span>
+  <span><i style="background:var(--exam);opacity:.5"></i>exam window</span>
+  <span><i style="background:var(--ink-2);box-shadow:inset 0 0 0 2px var(--exam)"></i>publish day</span>
+  <span><i style="background:var(--ink-2);box-shadow:inset 0 0 0 2px var(--today)"></i>today</span>
+  <span><i style="background:var(--ink-2)"></i>ahead</span>
+</div>
+
+<section class="today-card">
+  <div class="eyebrow" id="tcEyebrow">—</div>
+  <h2 id="tcTitle">—</h2>
+  <p id="tcDesc">—</p>
+  <div class="par" id="tcPar"></div>
+  <div class="btnrow">
+    <button class="btn" id="logBtn">Log today</button>
+    <button class="btn ghost" id="exportBtn">Export progress.json</button>
+    <button class="btn ghost" id="editBtn">Edit plan</button>
+    <button class="btn ghost" id="resetOrderBtn">Reset order</button>
+    <button class="btn ghost" id="resetBtn">Clear local edits</button>
+  </div>
+</section>
+
+<div id="parts"></div>
+
+<h2 class="sech">Done means done</h2>
+<ul class="dod">
+  <li>Resource read or watched</li>
+  <li>Lab completed and working</li>
+  <li>Notes written up</li>
+  <li>Pushed to GitHub</li>
+  <li>Can explain it with nothing open</li>
+</ul>
+
+<footer>
+  Priority is the shock absorber. When a week goes badly, P3 slides and everything
+  else holds. Nothing here gets deleted. Progress saves in this browser only.
+</footer>
+
+</div>
+
+<script>
+const KEY = "cel_100x3_v1";
+const store = (() => {
+  if (typeof window !== "undefined" && window.storage && window.storage.get) {
+    return {
+      async get(){ try{ const r = await window.storage.get(KEY); return r ? JSON.parse(r.value) : null; }catch(e){ return null; } },
+      async set(v){ try{ await window.storage.set(KEY, JSON.stringify(v)); }catch(e){} }
+    };
+  }
+  try {
+    localStorage.setItem("__t","1"); localStorage.removeItem("__t");
+    return {
+      async get(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }catch(e){ return null; } },
+      async set(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} }
+    };
+  } catch(e){}
+  let mem = null;
+  return { async get(){ return mem; }, async set(v){ mem = v; } };
+})();
+
+const DAY = 86400000;
+const mid = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const fmt = d => d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const shortf = d => d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+
+const L = (t,u) => ({t,u});
+
+const PARTS = [
+{ n:1, title:"Foundations and first Oracle certs", start:new Date(2026,8,7),
+  intro:"Oracle certifications are P1 throughout. Networking moved early because it is foundational — it collapses parts of Migration Architect, Cloud Security, DevOps and Architect Professional later. Four exams. <b>Python runs alongside at thirty minutes a day.</b>",
+  parallel:"Python for cloud automation · 30 min daily · 50h · P2",
+  parallelNote:"Owned: Automate the Boring Stuff (Sweigart, 9.5h) then Python Network Programming (Bombal, 12.8h). Skip Delgadillo — it duplicates both.",
+  mods:[
+  { d:[1,12], name:"GitHub core and Git", pri:"P2", hrs:28, exam:"GH-900",
+    sub:"Not Oracle, but everything commits to Git. Enabler, so it stays first.",
+    free:[L("GitHub Skills, interactive","https://skills.github.com"),
+          L("Microsoft Learn, GitHub Foundations","https://learn.microsoft.com/en-us/training/browse/?products=github"),
+          L("GitHub Docs","https://docs.github.com")],
+    paid:[], buy:"Nothing to buy. Exam fee only, about $99.",
+    labs:["Create three-hundred-days, push the tracker, enable Pages",
+          "Branch protection, CODEOWNERS, repo template with issue forms",
+          "One conflict resolved three ways: merge, rebase, squash",
+          "Normalise every cloudexplorers repo to one structure",
+          "100 practice questions at 80 percent, twice"],
+    ship:"GH-900 passed. Clouding Up #02 published." },
+
+  { d:[13,23], name:"OCI Networking Professional", pri:"P1", hrs:26, exam:"1Z0-1124-26",
+    sub:"Moved early on purpose. 20h05 course, 51 percent new, and it absorbs the multicloud block entirely.",
+    oracle:[["2. Design and Deploy VCNs","15 items · 2h12 — revision"],
+            ["3. VCN Gateways","19 items · 3h06 — partial"],
+            ["4. Networking Solutions and App Services","28 items · 4h15 — new"],
+            ["5. Hybrid Networking","25 items · 4h00 — new, includes Azure/GCP/AWS interconnect"],
+            ["6. Transitive Routing","6 items · 0h23 — new"],
+            ["7. Secure Networking","22 items · 3h56 — revision in part 3"],
+            ["9. Troubleshooting Tools","12 items · 1h37 — new"],
+            ["10. Best Practices","4 items · 0h23"]],
+    oracleNote:"Module 5 is the multicloud block — Azure, Google Cloud and AWS interconnect. Multicloud no longer exists as a separate module; it lives here with a certification attached. Module 7 makes Cloud Security in part three cheaper. Module 2 you already know from fifteen OCI certs.",
+    free:[L("MyLearn: OCI Networking Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oracle-cloud-infrastructure-networking-professional-2026/163340")],
+    paid:[], buy:"Nothing to buy. Course recommends Architect Associate first — you are well past it.",
+    labs:["Site-to-site VPN to a simulated on-prem endpoint",
+          "OCI to Azure interconnect, working end to end",
+          "Transitive routing through a DRG across three VCNs",
+          "Network Path Analyzer and VCN flow logs on your own tenancy",
+          "Private DNS with traffic steering"],
+    ship:"1Z0-1124-26 passed. Blog: hybrid and multicloud networking on OCI." },
+
+  { d:[24,38], name:"OCI Migration Architect Professional", pri:"P1", hrs:38, exam:"1Z0-1123-26",
+    sub:"13h course, now lighter still — module 2 is networking you just did.",
+    oracle:[["1. Essentials of Cloud Migrations","13 items · 0h56"],
+            ["2. OCI Networking for Migration","20 items · 2h34 — revision"],
+            ["3. On-premises to Native OCI","13 items · 1h16"],
+            ["4. AWS to Native OCI","11 items · 1h18"],
+            ["5. On-premises to OCVS","17 items · 1h54"],
+            ["6. Containers to OKE","14 items · 1h46 — previews part 2"],
+            ["7. Between OCI Regions","17 items · 1h38"],
+            ["8. Migrate Oracle Databases","17 items · 1h38 — your ground"]],
+    oracleNote:"Module 4 is where your 63 hours of Maarek AWS material earn their keep. Module 8 feeds Autonomous AI Database in part three.",
+    free:[L("MyLearn: OCI Migration Architect Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oci-migration-architect-professional-2026/162225")],
+    paid:[], buy:"Nothing to buy.",
+    labs:["Inventory a real Automus client estate, map it to OCI shapes",
+          "Landing zone: compartments, tagging, budgets",
+          "One lift-and-shift of a Linux VM, end to end",
+          "ZDM migration, on-prem Oracle to Base Database",
+          "All 8 skill checks at 80, then the practice exam"],
+    ship:"1Z0-1123-26 passed. Migration decision tree for clients." },
+
+  { d:[39,62], name:"Terraform on OCI", pri:"P2", hrs:60, exam:"TF Associate",
+    sub:"Not Oracle, but it underpins every Oracle lab from here on. FoggyKitchen for the provider, Viaene for the exam.",
+    free:[L("HashiCorp Learn tutorials","https://developer.hashicorp.com/terraform/tutorials"),
+          L("Associate study guide","https://developer.hashicorp.com/terraform/tutorials/certification-003")],
+    paid:[L("Owned — FoggyKitchen: Automate OCI with Terraform, 77 lessons","https://foggykitchen.com/courses/terraform-oci-course"),
+          L("Owned — Udemy: AWS IaC With Terraform (Viaene, 12.6h)","https://www.udemy.com/course/aws-infrastructure-as-code-with-terraform/")],
+    buy:"Nothing to buy. You own both.",
+    labs:["FoggyKitchen Lessons 1 to 9a in order, deploying every one",
+          "Rebuild the landing zone entirely in Terraform",
+          "State to OCI Object Storage with locking",
+          "Break state deliberately, repair with import and state mv",
+          "Multi-environment layout with terraform test on every module"],
+    ship:"terraform-oci-modules public. Terraform Associate passed." },
+
+  { d:[63,84], name:"Ansible", pri:"P3", hrs:55, exam:"",
+    sub:"Demoted to P3 under Oracle-priority mode. No certification, so it is the first thing that slides if a week goes badly.",
+    free:[L("Ansible documentation","https://docs.ansible.com"),
+          L("Jeff Geerling, Ansible 101 series","https://www.youtube.com/@JeffGeerling"),
+          L("Molecule testing docs","https://ansible.readthedocs.io/projects/molecule/")],
+    paid:[L("BUY — Udemy: Dive Into Ansible (James Spurin)","https://www.udemy.com/course/diveintoansible/")],
+    buyFlag:true,
+    buy:"BUY — Spurin's Dive Into Ansible, 7.5h, browser-based lab that runs locally or free on Google Cloud Shell. Buy on sale before day 63. This is now one of only two purchases in the whole plan.",
+    labs:["Three Oracle Linux 10 VMs on free tier, provisioned by Terraform",
+          "Dynamic inventory from the OCI plugin, never a static file",
+          "Install, configure and harden nginx with TLS, idempotently",
+          "Refactor into roles, ansible-vault every secret",
+          "Molecule test on one role",
+          "Publish a collection to Galaxy"],
+    ship:"ansible-oci public. Blog: Terraform builds it, Ansible runs it." },
+
+  { d:[85,88], name:"Chef, awareness only", pri:"P4", hrs:8, exam:"",
+    sub:"Open-source Infra Server EOL November 2026. Four days of reading, no server.",
+    free:[L("Chef documentation","https://docs.chef.io")],
+    paid:[], buy:"Nothing to buy, and do not be tempted.",
+    labs:["Read the architecture docs and one cookbook end to end",
+          "Explain the client-server pull model without notes",
+          "Write the 400-word comparison"],
+    ship:"Blog: why Ansible won configuration management." },
+
+  { d:[89,100], name:"Buffer, exams and write-up", pri:"P1", hrs:0, exam:"",
+    sub:"Twelve days. Four exams sat this part — this is where retakes live.",
+    free:[], paid:[], buy:"",
+    labs:["Any exam retake","Clear the Confluence backlog","Part one retrospective"],
+    ship:"Part one closed out honestly, including what slipped." }
+]},
+
+{ n:2, title:"Platform and Oracle operations certs", start:new Date(2027,0,4),
+  intro:"Containers and Kubernetes first, then three Oracle certs that harvest them. DevOps sits immediately after OKE while it is warm — it is 65 percent revision by construction. Four exams. <b>React runs alongside at twenty minutes a day.</b>",
+  parallel:"React for internal tools · 20 min daily · 35h · P4",
+  parallelNote:"Nothing to buy. react.dev's tutorial beats any course for this: rebuild the tracker, plus one Automus dashboard.",
+  mods:[
+  { d:[1,12], name:"Containers and Docker", pri:"P2", hrs:30, exam:"",
+    sub:"Enabler for the DevOps certification. Docker Mastery covers it.",
+    free:[L("Docker docs","https://docs.docker.com"),
+          L("OCI Container Registry docs","https://docs.oracle.com/en-us/iaas/Content/Registry/home.htm")],
+    paid:[L("Owned — Udemy: Docker Mastery (Bret Fisher, 22.3h)","https://www.udemy.com/course/docker-mastery/")],
+    buy:"Nothing to buy.",
+    labs:["Containerise one Automus tool you use weekly",
+          "Multi-stage build, image under 100 MB",
+          "Push to OCIR, pull from a different VM",
+          "Scan an image, fix what it finds"],
+    ship:"Two images in OCIR." },
+
+  { d:[13,30], name:"GitHub Actions and workflows", pri:"P2", hrs:45, exam:"GH-200",
+    sub:"Not Oracle, but it automates every Oracle lab that follows.",
+    free:[L("Official GH-200 study guide","https://learn.github.com/certification/ACTIONS"),
+          L("GitHub Actions documentation","https://docs.github.com/actions")],
+    paid:[L("BUY — Udemy: GitHub Actions, The Complete Guide (Schwarzmüller)","https://www.udemy.com/course/github-actions-the-complete-guide/"),
+          L("Owned — FoggyKitchen: OCI DevOps with Terraform","https://foggykitchen.com/courses/oci-devops-terraform-course")],
+    buyFlag:true,
+    buy:"BUY — Schwarzmüller's GitHub Actions: The Complete Guide, on sale before day 13. Second and last purchase in the plan. Pair with the FoggyKitchen OCI DevOps course you own and build the same pipeline twice.",
+    labs:["CI on terraform-oci-modules: fmt, validate, tflint on every PR",
+          "Reusable workflow called from two repos",
+          "OIDC federation to OCI, no long-lived keys anywhere",
+          "Same pipeline in OCI DevOps and Actions, side by side",
+          "Workflow reading progress.json to draft your milestone post"],
+    ship:"GH-200 passed. Every repo has CI." },
+
+  { d:[31,48], name:"Kubernetes and OKE", pri:"P2", hrs:45, exam:"",
+    sub:"Direct enabler for the DevOps certification next. Over-covered by what you own.",
+    free:[L("Kubernetes documentation","https://kubernetes.io/docs/home/"),
+          L("OKE documentation","https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm")],
+    paid:[L("Owned — Udemy: Docker and Kubernetes (Grider, 20.6h)","https://www.udemy.com/course/docker-and-kubernetes-the-complete-guide/"),
+          L("Owned — Udemy: Azure Kubernetes Service (12.7h)","https://www.udemy.com/course/azure-kubernetes-service-aks/")],
+    buy:"Nothing to buy.",
+    labs:["Provision OKE with Terraform, never the console",
+          "Deploy your containers with probes and resource limits",
+          "Ingress with cert-manager and a real certificate",
+          "Actions workflow deploying on merge to main"],
+    ship:"Live cluster serving something real." },
+
+  { d:[49,59], name:"OCI DevOps Professional", pri:"P1", hrs:27, exam:"1Z0-1109-26",
+    sub:"34h21 course but 65 percent revision — sat here, immediately after OKE, while everything is fresh.",
+    oracle:[["2–5. Containers, K8s, OKE, cluster access","66 items · 9h11 — revision"],
+            ["8, 10, 11. Deployments, admin, OKE security","81 items · 9h59 — revision"],
+            ["12. DevOps Project basics","18 items · 2h10 — new"],
+            ["13. Build and deploy pipelines","15 items · 2h43 — new"],
+            ["14. Blue-green and canary","8 items · 1h42 — new"],
+            ["15. Helm deployments","10 items · 1h24 — new"],
+            ["6, 7, 9. Virtual nodes, self-managed, storage","26 items · 2h53 — new"],
+            ["18. DevSecOps","9 items · 1h12 — new"],
+            ["16, 17, 19. Terraform, RM, Observability","36 items · 4h44 — revision"]],
+    oracleNote:"Skip the 20-hour Oracle University lab. You will have built OKE with Terraform and deployed through Actions with OIDC — sitting a guided lab to redo that is 20 hours proving something you already shipped. Modules 12 to 15 are the FoggyKitchen OCI DevOps course you own.",
+    free:[L("MyLearn: OCI DevOps Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oci-devops-professional-2026/162852")],
+    paid:[], buy:"Nothing to buy.",
+    labs:["OCI DevOps project with mirrored code repository",
+          "Build and deployment pipeline to your OKE cluster",
+          "Blue-green then canary on the same app",
+          "Helm chart delivery through the pipeline",
+          "DevSecOps: Vault secrets and CVE scanning in the build"],
+    ship:"1Z0-1109-26 passed. Blog: OCI DevOps versus GitHub Actions." },
+
+  { d:[60,80], name:"OCI Cloud Operations Professional", pri:"P1", hrs:52, exam:"1Z0-1067-26",
+    sub:"Biggest Oracle path, 24h across 13 modules. Do modules 2 and 10 properly — they reappear verbatim in Cloud Security.",
+    oracle:[["2. Day 0: IAM","37 items · 4h33 — repeats in Cloud Security"],
+            ["3. Day 0: Security Posture","27 items · 3h28"],
+            ["4–6. Billing, Limits, CLI and SDK","21 items · 1h28"],
+            ["7. Day 1: Terraform IaC","13 items · 1h00 — revision"],
+            ["8–9. Resource Mgmt, Monolithic Architecture","24 items · 3h44"],
+            ["10. Secrets and Encryption","15 items · 2h04 — repeats in Cloud Security"],
+            ["11. Day 2: Disaster Recovery","10 items · 1h26"],
+            ["12. Day 2: Observability","37 items · 4h21 — collapses the next module"],
+            ["13. Day 2: Troubleshooting","18 items · 1h49"]],
+    oracleNote:"Module 12 is why Observability drops to 16 hours immediately after. Prerequisite is a year of OCI hands-on; you are well past it.",
+    free:[L("MyLearn: OCI Cloud Operations Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oci-cloud-operations-professional-2026/163390")],
+    paid:[], buy:"Nothing to buy.",
+    labs:["Prometheus and Grafana on OKE, dashboards for your own services",
+          "Alerts that reach your phone, tested by causing a real outage",
+          "The Oracle University hands-on lab",
+          "DR runbook with a tested failover"],
+    ship:"1Z0-1067-26 passed. Public Grafana dashboard." },
+
+  { d:[81,87], name:"OCI Observability Professional", pri:"P1", hrs:16, exam:"1Z0-1111-26",
+    sub:"10h course, but modules 1 to 5 are Cloud Ops module 12 you just finished. Seven days, cheapest cert in the plan.",
+    oracle:[["1–2. Overview, Pillars","3 items · 0h21 — revision"],
+            ["3. Monitoring","11 items · 1h14 — revision"],
+            ["4. Logging","13 items · 1h33 — revision"],
+            ["5. Events","6 items · 0h45 — revision"],
+            ["6. Log Analytics","25 items · 3h15 — new, incl. Logan AI and Kubernetes"],
+            ["7. Application Performance Monitoring","21 items · 1h56 — new"],
+            ["8. Stack Monitoring","12 items · 1h04 — new"]],
+    oracleNote:"Only 6h15 is new. Doing this here also hollows out Architect Professional module 7 in part three — 28 items and 4h07 that become redundant. This is Oracle's answer to the Grafana stack, and now you will know both.",
+    free:[L("MyLearn: OCI Observability Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oracle-cloud-infrastructure-observability-professional-2026/162237")],
+    paid:[], buy:"Nothing to buy.",
+    labs:["Log Analytics onboarding, entities, log sources, query language",
+          "APM distributed tracing on your OKE app, with trace explorer",
+          "Synthetic monitoring from two vantage points",
+          "Stack Monitoring with a metric extension"],
+    ship:"1Z0-1111-26 passed. Blog: OCI Observability versus Prometheus and Grafana." },
+
+  { d:[88,100], name:"Buffer, exams and write-up", pri:"P1", hrs:0, exam:"",
+    sub:"Thirteen days. Four exams sat this part.",
+    free:[], paid:[], buy:"",
+    labs:["Any exam retake","Clear the Confluence backlog","Part two retrospective"],
+    ship:"Part two closed out." }
+]},
+
+{ n:3, title:"Oracle depth, revenue and capstone", start:new Date(2027,3,26),
+  intro:"Three Oracle certs, then the two tracks closest to Automus revenue, then the capstone. Architect Professional sits after everything because three of its seven modules become revision. <b>Writing runs alongside at twenty minutes a day.</b>",
+  parallel:"Blog and Confluence write-up · 20 min daily · P1",
+  parallelNote:"Every post owed from parts one and two gets written here. The Share half of the loop is the half that always slips.",
+  mods:[
+  { d:[1,16], name:"OCI Cloud Security Professional", pri:"P1", hrs:40, exam:"1Z0-1104-26",
+    sub:"24h55 course, but Networking module 7 and Cloud Ops modules 2 and 10 already covered 10h33 of it. Hands-on exam, 120 min, $295.",
+    oracle:[["3. IAM Services","37 items · 4h33 — repeat of Cloud Ops mod 2"],
+            ["4. Oracle Access Governance","35 items · 3h26 — new"],
+            ["5–6. Network Security, ZPR","15 items · 2h07 — revision from Networking"],
+            ["7–9. Firewall, WAF, LB and Certificates","30 items · 3h27 — revision from Networking"],
+            ["10. Compute Security and Bastion","14 items · 1h23 — revision"],
+            ["11. Vulnerability Scanning","7 items · 0h41 — new"],
+            ["12. Key Management","15 items · 2h04 — repeat of Cloud Ops mod 10"],
+            ["13. Data Safe","13 items · 1h26 — new"],
+            ["14–16. Cloud Guard, Threat Intel, Security Ops","37 items · 4h51 — new"]],
+    oracleNote:"The most expensive exam at $295 and the only performance-based one. Rehearse the tasks under time, not the questions.",
+    free:[L("MyLearn: Cloud Security Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-a-cloud-security-professional-2026/163254")],
+    paid:[L("Owned, optional — Udemy: Penetration Testing with KALI (6.7h)","https://www.udemy.com/course/penetration-testing/")],
+    buy:"Nothing to buy. Budget $295 for the exam.",
+    labs:["IAM: policies, dynamic groups, least privilege from scratch",
+          "Cloud Guard and Security Zones on the whole tenancy",
+          "Vault, key rotation, image signing in the Actions pipeline",
+          "Data Safe against a real database",
+          "Rehearse every hands-on task under exam time"],
+    ship:"1Z0-1104-26 passed. Security hardening post." },
+
+  { d:[17,24], name:"Oracle Autonomous AI Database Professional", pri:"P1", hrs:19, exam:"1Z0-931-26",
+    sub:"12h22 course, closest to your day job of anything here. Select AI and the MCP server replace half the GenAI block.",
+    oracle:[["1–2. Getting started, ADB Serverless","20 items · 2h04 — revision"],
+            ["3. ADB Dedicated and Cloud@Customer","6 items · 1h07 — new"],
+            ["4. Managing and Monitoring ADB","13 items · 2h01 — partial"],
+            ["5. ADB Tools: Data Studio, APEX, Oracle ML","16 items · 1h19 — new"],
+            ["6. Select AI: NL2SQL, RAG, agents","10 items · 1h04 — new"],
+            ["7. MCP Server for ADB","5 items · 0h23 — new"],
+            ["8. Developing: JSON duality, Vector Search, Lakehouse","15 items · 3h05 — new"],
+            ["9. Migrate to Autonomous","6 items · 1h19 — revision"]],
+    oracleNote:"Modules 6 and 7 are the RAG and MCP labs already scheduled in the GenAI block, done Oracle's way with a badge attached. Module 9 is Migration Architect module 8 again. Skip the 4h Oracle University lab.",
+    free:[L("MyLearn: Oracle Autonomous AI Database Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oracle-autonomous-ai-database-professional-2026/163045"),
+          L("Owned — FoggyKitchen: OCI Autonomous Database Serverless","https://foggykitchen.com/courses/oci-autonomous-database-course")],
+    paid:[], buy:"Nothing to buy. You own the FoggyKitchen course covering modules 1 and 2.",
+    labs:["Select AI NL2SQL against a real client schema",
+          "ADB MCP Server wired to Claude Desktop",
+          "AI Vector Search on your own data",
+          "JSON relational duality view",
+          "APEX app from spreadsheet data"],
+    ship:"1Z0-931-26 passed. Select AI demo for client conversations." },
+
+  { d:[25,45], name:"OCI Architect Professional", pri:"P1", hrs:52, exam:"1Z0-997-26",
+    sub:"The flagship, deliberately last. 27h35 course but modules 4, 5 and 7 are now all revision — 83 of 198 items.",
+    oracle:[["1. Introduction to Architecting","9 items · 0h46"],
+            ["2. HA and Disaster Recovery","12 items · 1h43"],
+            ["3. Cloud-Native Solutions","53 items · 7h35 — the real work"],
+            ["4. Implement Infrastructure as Code","20 items · 1h59 — revision"],
+            ["5. Architect Security Solutions","35 items · 4h58 — revision"],
+            ["6. Databases in OCI","41 items · 6h27 — partly revision after Autonomous"],
+            ["7. Architect Observability","28 items · 4h07 — revision"]],
+    oracleNote:"Forty percent arrives as review, and that saving exists only because this sits last. Modules 3 and 6 are where the new material lives. Includes a 6h14 hands-on lab — do this one, it is the flagship.",
+    free:[L("MyLearn: OCI Architect Professional 2026","https://mylearn.oracle.com/ou/learning-path/become-an-oci-architect-professional-2026/163270")],
+    paid:[], buy:"Nothing to buy.",
+    labs:["Multi-region HA architecture, designed and built",
+          "The 6h14 Oracle University hands-on lab",
+          "DR runbook with a real tested failover",
+          "Cost model the whole thing, then cut twenty percent",
+          "Skim modules 4, 5 and 7 — do not re-watch them"],
+    ship:"1Z0-997-26 passed. Eight Oracle certifications this year." },
+
+  { d:[46,61], name:"Oracle Integration Cloud", pri:"P2", hrs:40, exam:"",
+    sub:"No certification in this plan, but revenue-adjacent — protected at P2 despite Oracle-priority mode.",
+    free:[L("OIC documentation","https://docs.oracle.com/en-us/iaas/application-integration/index.html"),
+          L("Oracle A-Team Chronicles","https://www.ateam-oracle.com")],
+    paid:[], buy:"Check MyLearn for a free OIC path before buying anything.",
+    labs:["One real client integration rebuilt from scratch",
+          "Error handling and retry that works under actual failure",
+          "OIC deployment driven from a GitHub Actions pipeline",
+          "Connectivity agent to an on-prem source"],
+    ship:"Reusable OIC pattern library for Automus." },
+
+  { d:[62,77], name:"Oracle Fusion and AI Studio", pri:"P2", hrs:40, exam:"",
+    sub:"Revenue-adjacent. Now sits directly after Autonomous AI Database, so Select AI feeds straight into it.",
+    free:[L("Oracle Fusion Applications docs","https://docs.oracle.com/en/cloud/saas/index.html")],
+    paid:[], buy:"Check MyLearn for a Fusion AI Studio path first.",
+    labs:["Build one AI agent in AI Studio against real Fusion data",
+          "Fusion REST APIs from Python, not a UI",
+          "Select AI against Fusion data via ADB",
+          "One extension a client has actually asked for"],
+    ship:"Working Fusion AI demo for client conversations." },
+
+  { d:[78,87], name:"GenAI and agentic engineering", pri:"P3", hrs:25, exam:"",
+    sub:"Shrunk from 40h to 25h — Autonomous AI Database already covered RAG, MCP and vector search.",
+    free:[L("OCI Generative AI docs","https://docs.oracle.com/en-us/iaas/Content/generative-ai/home.htm"),
+          L("Anthropic documentation","https://docs.claude.com"),
+          L("LangChain Academy","https://academy.langchain.com")],
+    paid:[L("Owned — Udemy: MongoDB for AI Engineers, RAG and Agents (4.1h)","https://www.udemy.com/course/mongodb-for-ai-engineers/")],
+    buy:"Nothing to buy. Decide in part two whether anything current is worth it by then.",
+    labs:["One agent that does a real job in your workflow",
+          "MCP server exposing your OCI tooling, beyond the ADB one",
+          "Evaluate it properly, do not vibe-check it"],
+    ship:"Agent in daily use, written up." },
+
+  { d:[88,100], name:"Capstone", pri:"P1", hrs:30, exam:"",
+    sub:"One system using every part. Terraform provisions, Ansible configures, Actions ships, OKE runs, OCI Observability watches, Select AI queries.",
+    free:[], paid:[], buy:"",
+    labs:["Build it, deploy it, monitor it, document it",
+          "Full public repo with a README worth reading",
+          "Write the year up honestly, including what you skipped"],
+    ship:"Capstone live. Eleven exams. Year-in-review post." }
+]}
+];
+
+/* derive absolute day offsets */
+let off = 0;
+PARTS.forEach(p => { p.offset = off; off += 100; });
+const TOTAL = 300;
+const absDate = (p, dayInPart) => new Date(p.start.getTime() + (dayInPart - 1) * DAY);
+
+/* exam windows: last 5 days of any module carrying an exam */
+const EXAM = new Set();
+PARTS.forEach(p => p.mods.forEach(m => {
+  if (!m.exam) return;
+  for (let d = Math.max(m.d[0], m.d[1] - 4); d <= m.d[1]; d++) EXAM.add(p.offset + d);
+}));
+
+/* Publish calendar. Absolute day numbers. Seven of 100 in part one;
+   parts two and three get theirs at their start dates. */
+const PUBLISH = {
+  12:["Blog + LinkedIn","Clouding Up #02 — the plan, the tracker, GH-900 passed"],
+  23:["LinkedIn","1Z0-1124-26 Networking Professional passed"],
+  38:["LinkedIn","1Z0-1123-26 Migration Architect passed"],
+  62:["Blog + LinkedIn + GitHub","Terraform Associate. terraform-oci-modules goes public"],
+  84:["Blog + LinkedIn + GitHub","Ansible ships. Galaxy collection + ansible-oci public"],
+  88:["Blog only","Chef comparison, 400 words. Too small for LinkedIn"],
+  99:["Blog + LinkedIn","Part one retrospective. Lead with the real percentage"],
+  130:["Blog + LinkedIn","GH-200 passed. Every repo has CI"],
+  159:["LinkedIn","1Z0-1109-26 DevOps Professional passed"],
+  180:["LinkedIn","1Z0-1067-26 Cloud Operations passed"],
+  187:["Blog + LinkedIn","1Z0-1111-26 Observability. OCI Observability vs Prometheus"],
+  199:["Blog + LinkedIn","Part two retrospective. Eight exams behind you"],
+  216:["LinkedIn","1Z0-1104-26 Cloud Security passed"],
+  224:["LinkedIn","1Z0-931-26 Autonomous AI Database passed"],
+  245:["Blog + LinkedIn","1Z0-997-26 Architect Professional. Eight Oracle certs"],
+  261:["Blog only","OIC pattern library for Automus"],
+  277:["Blog + LinkedIn","Fusion and AI Studio demo"],
+  300:["Blog + LinkedIn","Capstone. The whole year, honestly"]
+};
+function nextPublish(from){
+  const keys = Object.keys(PUBLISH).map(Number).sort((a,b)=>a-b);
+  for (const k of keys) if (k >= from) return [k, PUBLISH[k]];
+  return null;
+}
+
+/* ---------- edit mode: reorder modules, change priority ---------- */
+let editMode = false;
+let overrides = null;   // {partIndex: [{name, pri}]} — order + priority only
+
+function applyOverrides(){
+  if (!overrides) return;
+  PARTS.forEach((p,pi) => {
+    const ov = overrides[pi];
+    if (!ov) return;
+    const byName = {}; p.mods.forEach(m => byName[m.name] = m);
+    const reordered = ov.map(o => { const m = byName[o.name]; if (m){ m.pri = o.pri; } return m; })
+                        .filter(Boolean);
+    p.mods.forEach(m => { if (!reordered.includes(m)) reordered.push(m); });
+    p.mods = reordered;
+    recomputeDays(p);
+  });
+}
+
+/* Day ranges follow hours. Buffer modules (0h) absorb the remainder. */
+function recomputeDays(p){
+  const work = p.mods.filter(m => m.hrs > 0);
+  const zero = p.mods.filter(m => m.hrs === 0);
+  const totalH = work.reduce((s,m) => s + m.hrs, 0);
+  const budget = 100 - zero.length * 12;
+  let acc = 0;
+  const spans = work.map((m,i) => {
+    let d = Math.max(3, Math.round(m.hrs / totalH * budget));
+    acc += d; return d;
+  });
+  let drift = budget - acc;
+  for (let i = 0; drift !== 0 && i < spans.length; i = (i+1) % spans.length){
+    if (drift > 0){ spans[i]++; drift--; } else if (spans[i] > 3){ spans[i]--; drift++; }
+    if (i === spans.length - 1 && drift === 0) break;
+  }
+  let cursor = 1, wi = 0;
+  p.mods.forEach(m => {
+    const len = m.hrs > 0 ? spans[wi++] : (100 - cursor + 1);
+    m.d = [cursor, Math.min(100, cursor + len - 1)];
+    cursor = m.d[1] + 1;
+  });
+  if (p.mods.length) p.mods[p.mods.length-1].d[1] = 100;
+}
+
+async function saveOverrides(){
+  overrides = PARTS.map(p => p.mods.map(m => ({name:m.name, pri:m.pri})));
+  const raw = await store.get() || {};
+  await store.set({ logged:[...logged], overrides });
+}
+
+function move(pi, mi, dir){
+  const mods = PARTS[pi].mods;
+  const to = mi + dir;
+  if (to < 0 || to >= mods.length) return;
+  [mods[mi], mods[to]] = [mods[to], mods[mi]];
+  recomputeDays(PARTS[pi]);
+  saveOverrides(); renderParts(); render();
+}
+function setPri(pi, mi, v){
+  PARTS[pi].mods[mi].pri = v;
+  saveOverrides(); renderParts();
+}
+async function resetOrder(){
+  if (!confirm("Reset every module back to the original order and priority?")) return;
+  overrides = null;
+  const raw = await store.get() || {};
+  await store.set({ logged:[...logged] });
+  location.reload();
+}
+
+let logged = new Set();
+
+/* which part are we in, and what day of it */
+function position(){
+  const t = mid(new Date());
+  for (const p of PARTS){
+    const s = mid(p.start), e = new Date(s.getTime() + 99 * DAY);
+    if (t < s) return { part:p, day:0, before:true };
+    if (t <= e) return { part:p, day:Math.round((t - s)/DAY) + 1, before:false };
+  }
+  return { part:null, day:0, after:true };
+}
+function absToday(){
+  const pos = position();
+  if (!pos.part) return TOTAL + 1;
+  if (pos.before) return pos.part.offset;      // nothing loggable yet in this part
+  return pos.part.offset + pos.day;
+}
+
+/* Public source of truth: progress.json committed to the repo.
+   Local browser edits layer on top, so you can log offline and
+   export a fresh progress.json to commit. */
+async function loadPublic(){
+  try{
+    const r = await fetch("progress.json", {cache:"no-store"});
+    if(!r.ok) return null;
+    const j = await r.json();
+    return Array.isArray(j.logged) ? j : null;
+  }catch(e){ return null; }
+}
+
+async function load(){
+  logged = new Set();
+  const pub = await loadPublic();
+  if (pub) pub.logged.forEach(d => logged.add(d));
+  const raw = await store.get();
+  if (raw && Array.isArray(raw.logged)) raw.logged.forEach(d => logged.add(d));
+  if (raw && raw.overrides) { overrides = raw.overrides; applyOverrides(); }
+  render();
+}
+async function save(){ await store.set({ logged:[...logged], overrides }); }
+function toggle(n){
+  if (n > absToday()) return;
+  logged.has(n) ? logged.delete(n) : logged.add(n);
+  save(); render();
+}
+function streaks(){
+  const t = Math.min(absToday(), TOTAL);
+  let cur=0, best=0, run=0;
+  for (let d=1; d<=t; d++){ if(logged.has(d)){run++; best=Math.max(best,run);} else run=0; }
+  for (let d=t; d>=1; d--){ if(logged.has(d)) cur++; else if(d!==t) break; }
+  return {cur,best};
+}
+
+function buildHundreds(){
+  const t = absToday();
+  document.getElementById("hundreds").innerHTML = PARTS.map(p => {
+    const end = new Date(p.start.getTime() + 99*DAY);
+    let cells = "";
+    for (let i=1; i<=100; i++){
+      const n = p.offset + i;
+      let c = "cell";
+      if (logged.has(n)) c += " done";
+      else if (n < t) c += " miss";
+      if (EXAM.has(n) && !logged.has(n)) c += " exam";
+      if (PUBLISH[n]) c += " pubcell";
+      if (n === t) c += " today";
+      cells += `<button class="${c}" data-d="${n}" title="Part ${p.n}, day ${i} — ${fmt(absDate(p,i))}" aria-label="Part ${p.n} day ${i}"></button>`;
+    }
+    return `<div class="hundred">
+      <h3>Part ${p.n} — ${p.title}</h3>
+      <div class="dates">${shortf(p.start)} – ${fmt(end)}</div>
+      <div class="sq">${cells}</div></div>`;
+  }).join("");
+  document.querySelectorAll(".sq .cell").forEach(b => b.onclick = () => toggle(+b.dataset.d));
+}
+
+function renderToday(){
+  const pos = position();
+  const eb=document.getElementById("tcEyebrow"), ti=document.getElementById("tcTitle"),
+        de=document.getElementById("tcDesc"), pa=document.getElementById("tcPar"),
+        btn=document.getElementById("logBtn");
+
+  if (!pos.part){
+    eb.textContent="Complete"; ti.textContent="All three parts are behind you";
+    de.textContent=`${logged.size} of 300 days logged.`; pa.textContent="";
+    btn.disabled=true; btn.style.opacity=.4; btn.textContent="Finished"; return;
+  }
+  if (pos.before){
+    const away = Math.round((mid(pos.part.start) - mid(new Date()))/DAY);
+    eb.textContent = pos.part.offset === 0 ? "Not started" : "Between parts";
+    ti.textContent = `${away} day${away===1?"":"s"} until part ${pos.part.n}`;
+    de.textContent = `Part ${pos.part.n}, ${pos.part.title}, opens ${fmt(pos.part.start)}.`;
+    pa.textContent = pos.part.offset === 0 ? "" : "Breaks are scheduled, not slippage. Rest properly.";
+    btn.disabled=true; btn.style.opacity=.4; btn.textContent=`Opens ${shortf(pos.part.start)}`; return;
+  }
+  const p = pos.part, d = pos.day, n = p.offset + d;
+  const m = p.mods.find(x => d >= x.d[0] && d <= x.d[1]) || p.mods[p.mods.length-1];
+  eb.textContent = `Part ${p.n} · day ${d} of 100 · ${m.exam ? "exam module" : "P" + m.pri.slice(1)}`;
+  ti.textContent = m.name;
+  de.textContent = m.sub;
+  const abs = p.offset + d;
+  const np = nextPublish(abs);
+  let line = "Alongside: " + p.parallel;
+  if (PUBLISH[abs]) line = "PUBLISH TODAY — " + PUBLISH[abs][0] + ": " + PUBLISH[abs][1];
+  else if (np) line = "Alongside: " + p.parallel + "  ·  Next publish: day " + np[0] +
+      " (" + shortf(absDate(p, np[0] - p.offset)) + "), " + np[1][0];
+  pa.textContent = line;
+  pa.className = PUBLISH[abs] ? "par pubday" : "par";
+  btn.textContent = logged.has(n) ? "Logged. Undo?" : "Log today";
+  btn.disabled=false; btn.style.opacity=1;
+  btn.onclick = () => toggle(n);
+}
+
+function renderParts(){
+  const link = o => `<li><a href="${o.u}" target="_blank" rel="noopener">${o.t}</a></li>`;
+  document.getElementById("parts").innerHTML = PARTS.map(p => {
+    const end = new Date(p.start.getTime() + 99*DAY);
+    const pi = PARTS.indexOf(p);
+    const mods = p.mods.map((m,mi) => {
+      const a = absDate(p, m.d[0]), b = absDate(p, m.d[1]);
+      return `<details class="mod">
+        <summary>
+          <span class="days">${String(m.d[0]).padStart(3,"0")}–${String(m.d[1]).padStart(3,"0")}</span>
+          <span class="nm">${m.name}<span class="pri ${m.pri}">${m.pri}</span>${m.exam?`<span class="tag">${m.exam}</span>`:""}</span>
+          <span class="hrs">${m.hrs?m.hrs+"h":"—"}</span>
+          ${editMode?`<span class="edit" onclick="event.preventDefault();event.stopPropagation();">
+            <button class="mv" onclick="move(${pi},${mi},-1)" title="Move up">&#9650;</button>
+            <button class="mv" onclick="move(${pi},${mi},1)" title="Move down">&#9660;</button>
+            <select onchange="setPri(${pi},${mi},this.value)">
+              ${["P1","P2","P3","P4"].map(v=>`<option value="${v}"${v===m.pri?" selected":""}>${v}</option>`).join("")}
+            </select></span>`:""}
+          <span class="sub">${shortf(a)} – ${shortf(b)} · ${m.sub}</span>
+        </summary>
+        <div class="body">
+          ${m.oracle?`<h4>Oracle MyLearn modules</h4><table class="omod">${m.oracle.map(o=>`<tr><td>${o[0]}</td><td>${o[1]}</td></tr>`).join("")}</table><div class="onote">${m.oracleNote||""}</div>`:""}
+          ${m.buy?`<div class="hold${m.buyFlag?" buy":""}">${m.buy}</div>`:""}
+          ${m.free.length?`<h4 class="free">Free</h4><ul>${m.free.map(link).join("")}</ul>`:""}
+          ${m.paid.length?`<h4 class="paid">Paid, optional</h4><ul>${m.paid.map(link).join("")}</ul>`:""}
+          <h4>Hands-on</h4><ul>${m.labs.map(l=>`<li>${l}</li>`).join("")}</ul>
+          <div class="ship"><b>Ship it:</b> ${m.ship}</div>
+        </div></details>`;
+    }).join("");
+    return `<h2 class="sech">Part ${p.n} — ${p.title}</h2>
+      <div class="partintro">${shortf(p.start)} to ${fmt(end)}. ${p.intro}</div>
+      <div class="partintro"><b>Parallel track:</b> ${p.parallel}. ${p.parallelNote}</div>
+      ${mods}`;
+  }).join("");
+}
+
+function render(){
+  const pos = position();
+  const shown = pos.part && !pos.before ? pos.day : (pos.part ? 0 : 100);
+  document.getElementById("dayNum").textContent = String(shown).padStart(3,"0");
+  document.getElementById("dayDen").textContent = pos.part ? `/100 · part ${pos.part.n}` : "/100 · done";
+  document.getElementById("dayLabel").textContent =
+    !pos.part ? "complete" : pos.before ? "not open yet" : fmt(new Date());
+
+  const {cur,best} = streaks();
+  const elapsed = Math.max(0, Math.min(absToday(), TOTAL));
+  document.getElementById("sHours").textContent = logged.size * 2.5;
+  document.getElementById("sDays").textContent = logged.size;
+  document.getElementById("sStreak").textContent = cur;
+  document.getElementById("sBest").textContent = best;
+  document.getElementById("sRate").textContent = elapsed < 1 ? "—" : Math.round(logged.size/elapsed*100)+"%";
+
+  buildHundreds(); renderToday();
+}
+
+document.getElementById("exportBtn").onclick = () => {
+  const out = JSON.stringify({ updated:new Date().toISOString().slice(0,10),
+                               logged:[...logged].sort((a,b)=>a-b) }, null, 2);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([out],{type:"application/json"}));
+  a.download = "progress.json"; a.click(); URL.revokeObjectURL(a.href);
+};
+
+document.getElementById("editBtn").onclick = (e) => {
+  editMode = !editMode;
+  e.target.textContent = editMode ? "Done editing" : "Edit plan";
+  document.body.classList.toggle("editing", editMode);
+  renderParts();
+  if (editMode) document.querySelectorAll(".mod").forEach(d => d.open = false);
+};
+document.getElementById("resetOrderBtn").onclick = resetOrder;
+
+document.getElementById("resetBtn").onclick = async () => {
+  if (!confirm("Clear local edits? Days already in progress.json will stay.")) return;
+  await store.set({ logged:[] }); await load();
+};
+
+renderParts();
+load();
+</script>
+</body>
+</html>
