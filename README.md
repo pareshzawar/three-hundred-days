@@ -20,7 +20,7 @@ Foundations, GitHub Actions, and Terraform Associate.
 
 | Part | Window | Focus | Exams |
 |---|---|---|---|
-| 1 | 7 Sep – 15 Dec 2026 | GitHub, OCI Networking, Migration Architect, Terraform, Ansible | GH-900 · 1Z0-1124-26 · 1Z0-1123-26 · Terraform Associate |
+| 1 | 21 Sep – 29 Dec 2026 | GitHub, OCI Networking, Migration Architect, Terraform, Ansible | GH-900 · 1Z0-1124-26 · 1Z0-1123-26 · Terraform Associate |
 | 2 | 4 Jan – 13 Apr 2027 | Containers, GitHub Actions, Kubernetes, OCI DevOps, Cloud Operations, Observability | GH-200 · 1Z0-1109-26 · 1Z0-1067-26 · 1Z0-1111-26 |
 | 3 | 26 Apr – 3 Aug 2027 | OCI Cloud Security, Autonomous AI Database, Architect Professional, Integration, Fusion, capstone | 1Z0-1104-26 · 1Z0-931-26 · 1Z0-997-26 |
 
